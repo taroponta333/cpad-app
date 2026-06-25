@@ -1,50 +1,65 @@
-package com.example.retrotool;
+package com.example.challengetouch.tools;
 
-import android.os.Build;
+import android.app.Activity;
 import android.os.Bundle;
+import android.view.View;
+import android.widget.Button;
+import android.widget.LinearLayout;
 import android.widget.TextView;
-import androidx.appcompat.app.AppCompatActivity;
-import java.net.InetAddress;
-import java.net.NetworkInterface;
-import java.util.Collections;
-import java.util.List;
+import java.io.DataOutputStream;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends Activity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
 
-        TextView tvInfo = findViewById(R.id.tv_info);
-        
-        String ipAddress = getIPAddress();
-        String systemInfo = "【ネットワーク情報】\n" +
-                "IPアドレス: " + ipAddress + "\n\n" +
-                "【端末システム情報】\n" +
-                "OSバージョン: Android " + Build.VERSION.RELEASE + " (API " + Build.VERSION.SDK_INT + ")\n" +
-                "モデル名: " + Build.MODEL + "\n" +
-                "ハードウェア: " + Build.HARDWARE + "\n" +
-                "製造元: " + Build.MANUFACTURER;
+        // 画面レイアウトをコードだけで構築（ネットワーク・リソース不要）
+        LinearLayout layout = new LinearLayout(this);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        layout.setPadding(30, 30, 30, 30);
 
-        tvInfo.setText(systemInfo);
+        TextView title = new TextView(this);
+        title.setText("チャレンジタッチ 初代Root工具箱 (Android 4.2.2)\n");
+        title.setTextSize(22);
+        layout.addView(title);
+
+        // ボタン1: 安全な高速シャットダウン (Root必須)
+        Button btnReboot = new Button(this);
+        btnReboot.setText("Root権限で強制再起動");
+        btnReboot.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                runRootCommand("reboot");
+            }
+        });
+        layout.addView(btnReboot);
+
+        // ボタン2: バッテリーの統計情報を強制リセット (Root必須)
+        Button btnBattery = new Button(this);
+        btnBattery.setText("バッテリーキャリブレーション (統計リセット)");
+        btnBattery.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                runRootCommand("rm /data/system/batterystats.bin");
+            }
+        });
+        layout.addView(btnBattery);
+
+        setContentView(layout);
     }
 
-    // Android 4.2.2でも確実にIPアドレスを取得するロジック
-    private String getIPAddress() {
+    // Root権限(su)でシェルコマンドを実行するメソッド
+    private void runRootCommand(String command) {
         try {
-            List<NetworkInterface> interfaces = Collections.list(NetworkInterface.getNetworkInterfaces());
-            for (NetworkInterface intf : interfaces) {
-                List<InetAddress> addrs = Collections.list(intf.getInetAddresses());
-                for (InetAddress addr : addrs) {
-                    if (!addr.isLoopbackAddress()) {
-                        String sAddr = addr.getHostAddress();
-                        boolean isIPv4 = sAddr.indexOf(':') < 0;
-                        if (isIPv4) return sAddr;
-                    }
-                }
-            }
-        } catch (Exception ignored) { }
-        return "取得失敗 (Wi-Fiオフライン)";
+            Process process = Runtime.getRuntime().exec("su");
+            DataOutputStream os = new DataOutputStream(process.getOutputStream());
+            os.writeBytes(command + "\n");
+            os.writeBytes("exit\n");
+            os.flush();
+            process.waitFor();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }
