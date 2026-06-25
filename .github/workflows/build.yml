@@ -7,11 +7,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-    - name: set up JDK 11
+    
+    - name: set up JDK 17
       uses: actions/setup-java@v4
       with:
-        java-version: '11'
+        java-version: '17'  # ⚠️ここを11から17に修正してエラーを回避
         distribution: 'temurin'
+        
     - name: Create Build Files
       run: |
         echo "rootProject.name = 'RetroTool'" > settings.gradle
@@ -25,7 +27,7 @@ jobs:
             compileSdk 33
             defaultConfig {
                 applicationId "com.example.retrotool"
-                minSdkVersion 17  # ⚠️Android 4.2.2対応
+                minSdkVersion 17
                 targetSdk 22
             }
             sourceSets {
@@ -36,8 +38,10 @@ jobs:
             }
         }
         EOF
+        
     - name: Build with Gradle
       run: gradle assembleDebug
+      
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
